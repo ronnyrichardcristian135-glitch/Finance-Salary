@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Payroll 2 Minggu</title>
+<style>
+body { font-family: Arial, sans-serif; background:#f4f6f8; margin:20px; }
+h2 { margin-top:30px; }
+table { border-collapse: collapse; width:100%; background:#fff; }
+th, td { border:1px solid #ccc; padding:6px; text-align:center; }
+th { background:#eee; }
+input[type="number"], input[type="time"], input[type="date"], input[type="text"] {
+  width:100%; box-sizing:border-box;
+}
+.dashboard { display:flex; gap:20px; }
+.card {
+  background:#fff; padding:15px; border-radius:6px;
+  box-shadow:0 0 5px rgba(0,0,0,.1);
+  flex:1;
+}
+.green { color:green; }
+.red { color:red; }
+button { padding:6px 10px; cursor:pointer; }
+</style>
+</head>
+<body>
+
+<h1>Payroll 2 Minggu</h1>
+
+<div class="dashboard">
+  <div class="card">
+    <h3>Total Jam</h3>
+    <h2 id="totalJam">0</h2>
+  </div>
+  <div class="card">
+    <h3>Total Gaji</h3>
+    <h2 class="green" id="totalGaji">Rp 0</h2>
+  </div>
+  <div class="card">
+    <h3>Total Kasbon</h3>
+    <h2 class="red" id="totalKasbon">Rp 0</h2>
+  </div>
+</div>
+
+<h2>Data Karyawan</h2>
+<table>
+<tr>
+  <th>Nama</th>
+  <th>Gaji / Jam</th>
+  <th>Tunjangan Makan / Hari</th>
+</tr>
+<tr>
+  <td><input id="nama" value="Karyawan A"></td>
+  <td><input id="gajiJam" type="number" value="20000"></td>
+  <td><input id="uangMakan" type="number" value="15000"></td>
+</tr>
+</table>
+
+<h2>Jam Kerja (2 Minggu)</h2>
+<table id="jamTable">
+<tr>
+  <th>Tanggal</th>
+  <th>Hari</th>
+  <th>Masuk</th>
+  <th>Keluar</th>
+  <th>×2</th>
+  <th>Durasi (Jam)</th>
+</tr>
+</table>
+
+<h2>Kasbon</h2>
+<table id="kasbonTable">
+<tr>
+  <th>Keterangan</th>
+  <th>Nominal</th>
+  <th>Aksi</th>
+</tr>
+</table>
+<button onclick="tambahKasbon()">+ Tambah Kasbon</button>
+
+<script>
+const hariIndo = ["Minggu","Senin","Selasa","Rabu","Kamis","Jumat","Sabtu"];
+
+function initTanggal() {
+  const table = document.getElementById("jamTable");
+  const start = new Date();
+  for (let i=0;i<14;i++) {
+    const d = new Date(start);
+    d.setDate(start.getDate()+i);
+    const tr = document.createElement("tr");
+    tr.innerHTML = `
+      <td><input type="date" value="${d.toISOString().split('T')[0]}"></td>
+      <td>${hariIndo[d.getDay()]}</td>
+      <td><input type="time"></td>
+      <td><input type="time"></td>
+      <td><input type="checkbox"></td>
+      <td class="durasi">0</td>
+    `;
+    table.appendChild(tr);
+  }
+}
+
+function hitung() {
+  let totalJam = 0;
+  let totalMakan = 0;
+  const gajiJam = +document.getElementById("gajiJam").value;
+  const uangMakan = +document.getElementById("uangMakan").value;
+
+  document.querySelectorAll("#jamTable tr").forEach((tr,i)=>{
+    if(i===0) return;
+    const masuk = tr.children[2].querySelector("input").value;
+    const keluar = tr.children[3].querySelector("input").value;
+    const kali2 = tr.children[4].querySelector("input").checked;
+    let jam = 0;
+    if(masuk && keluar) {
+      const m = new Date("1970-01-01T"+masuk);
+      const k = new Date("1970-01-01T"+keluar);
+      jam = (k-m)/36e5;
+      if(jam < 0) jam += 24;
+      if(kali2) jam *= 2;
+      totalMakan += uangMakan;
+    }
+    tr.querySelector(".durasi").innerText = jam.toFixed(2);
+    totalJam += jam;
+  });
+
+  let totalKasbon = 0;
+  document.querySelectorAll(".kasbonNominal").forEach(i=>{
+    totalKasbon += +i.value;
+  });
+
+  const totalGaji = totalJam * gajiJam + totalMakan - totalKasbon;
+
+  document.getElementById("totalJam").innerText = totalJam.toFixed(2);
+  document.getElementById("totalKasbon").innerText = "Rp "+totalKasbon.toLocaleString();
+  document.getElementById("totalGaji").innerText = "Rp "+totalGaji.toLocaleString();
+}
+
+function tambahKasbon() {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td><input></td>
+    <td><input type="number" class="kasbonNominal" value="0"></td>
+    <td><button onclick="this.parentElement.parentElement.remove()">Hapus</button></td>
+  `;
+  document.getElementById("kasbonTable").appendChild(tr);
+}
+
+document.body.addEventListener("input", hitung);
+document.body.addEventListener("change", hitung);
+
+initTanggal();
+hitung();
+</script>
+
+</body>
+</html>
